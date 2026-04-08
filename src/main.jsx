@@ -4,7 +4,7 @@ import App from "./App";
 import { AuthProvider } from "react-oidc-context";
 
 const cognitoAuthConfig = {
-  authority: "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_EIB5xN1wh",
+  authority: "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_ElB5xN1wh",
   client_id: "4ba0ces3ltr96is47aq2do4b5r",
   redirect_uri: "https://main.dbrkvr6fnlyen.amplifyapp.com/",
   response_type: "code",
