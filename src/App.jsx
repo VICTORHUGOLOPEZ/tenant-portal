@@ -1,9 +1,16 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 
 function App() {
   const auth = useAuth();
 
   const stripePaymentLink = "https://buy.stripe.com/test_fZu4gs4rR3S63008Kg5ZC01";
+  const apiUrl =
+    "https://z45s9wov3k.execute-api.us-east-2.amazonaws.com/prod/tenant-dashboard";
+
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
+  const [dashboardError, setDashboardError] = useState("");
 
   const signOutRedirect = async () => {
     const clientId = "4ba0ces3ltr96is47aq2do4b5r";
@@ -22,6 +29,36 @@ function App() {
 
     window.location.assign(logoutUrl);
   };
+
+  useEffect(() => {
+    if (!auth.isAuthenticated) return;
+
+    const fetchDashboard = async () => {
+      setLoadingDashboard(true);
+      setDashboardError("");
+
+      try {
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        const parsedBody =
+          typeof result.body === "string" ? JSON.parse(result.body) : result.body ?? result;
+
+        setDashboardData(parsedBody);
+      } catch (error) {
+        console.error("Dashboard fetch error:", error);
+        setDashboardError("Unable to load dashboard data.");
+      } finally {
+        setLoadingDashboard(false);
+      }
+    };
+
+    fetchDashboard();
+  }, [auth.isAuthenticated]);
 
   if (auth.isLoading) {
     return <div style={{ padding: "40px", fontFamily: "Arial" }}>Loading...</div>;
@@ -48,6 +85,9 @@ function App() {
         <h1>🏡 Tenant Portal</h1>
         <p>Welcome, {auth.user?.profile?.email}</p>
 
+        {loadingDashboard && <p>Loading dashboard data...</p>}
+        {dashboardError && <p style={{ color: "red" }}>{dashboardError}</p>}
+
         <div
           style={{
             border: "1px solid #ddd",
@@ -59,10 +99,22 @@ function App() {
           }}
         >
           <h2 style={{ marginTop: 0 }}>Property Information</h2>
-          <p><strong>Address:</strong> 4830 Fiadore Ln, Castle Rock, CO 80104</p>
-          <p><strong>Monthly Rent:</strong> $3,900</p>
-          <p><strong>Due Date:</strong> 1st of every month</p>
-          <p><strong>Status:</strong> Payment pending</p>
+          <p>
+            <strong>Address:</strong>{" "}
+            {dashboardData?.address || "Loading..."}
+          </p>
+          <p>
+            <strong>Monthly Rent:</strong>{" "}
+            {dashboardData ? `$${dashboardData.monthlyRent}` : "Loading..."}
+          </p>
+          <p>
+            <strong>Due Date:</strong>{" "}
+            {dashboardData ? `${dashboardData.dueDay}st of every month` : "Loading..."}
+          </p>
+          <p>
+            <strong>Status:</strong>{" "}
+            {dashboardData?.paymentStatus || "Loading..."}
+          </p>
         </div>
 
         <div
@@ -117,7 +169,9 @@ function App() {
           }}
         >
           <h2 style={{ marginTop: 0 }}>Reminder</h2>
-          <p>Don’t forget: your monthly rent payment is due soon.</p>
+          <p>
+            Don’t forget: your monthly rent payment is due soon.
+          </p>
         </div>
       </div>
     );
